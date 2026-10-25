@@ -18,7 +18,20 @@ jobs:
           cd "$(dirname "$(find . -name settings.gradle | head -1)")"
           gradle bundleRelease assembleRelease
           mkdir -p "$GITHUB_WORKSPACE/hasil"
-          find . -path "*/build/outputs/*" \( -name "*.apk" -o -name "*.aab" \) -exec cp {} "$GITHUB_WORKSPACE/hasil/" \;
+          KS="$PWD/release.jks"
+          PW=$(grep '^STORE_PASS=' gradle.properties 2>/dev/null | cut -d= -f2)
+          if [ ! -f "$KS" ] || [ -z "$PW" ]; then
+            PW=nahwu123456
+            KS="$PWD/temp.jks"
+            keytool -genkeypair -keystore "$KS" -alias upload -keyalg RSA -keysize 2048 -validity 10000 -storepass "$PW" -keypass "$PW" -dname "CN=Nahwu Quest"
+          fi
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          UNS=$(find . -path "*/outputs/apk/release/*.apk" | head -1)
+          $BT/zipalign -f -p 4 "$UNS" aligned.apk
+          $BT/apksigner sign --ks "$KS" --ks-pass pass:"$PW" --key-pass pass:"$PW" --ks-key-alias upload --out "$GITHUB_WORKSPACE/hasil/app-release.apk" aligned.apk
+          AAB=$(find . -path "*/outputs/bundle/release/*.aab" | head -1)
+          cp "$AAB" "$GITHUB_WORKSPACE/hasil/app-release.aab"
+          jarsigner -keystore "$KS" -storepass "$PW" -keypass "$PW" "$GITHUB_WORKSPACE/hasil/app-release.aab" upload
           ls -la "$GITHUB_WORKSPACE/hasil"
       - uses: actions/upload-artifact@v4
         with:
