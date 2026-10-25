@@ -18,8 +18,8 @@ jobs:
           cd "$(dirname "$(find . -name settings.gradle | head -1)")"
           gradle bundleRelease assembleRelease
           mkdir -p "$GITHUB_WORKSPACE/hasil"
-          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/hasil/"
-          cp app/build/outputs/bundle/release/app-release.aab "$GITHUB_WORKSPACE/hasil/"
+          find . -path "*/build/outputs/*" \( -name "*.apk" -o -name "*.aab" \) -exec cp {} "$GITHUB_WORKSPACE/hasil/" \;
+          ls -la "$GITHUB_WORKSPACE/hasil"
       - uses: actions/upload-artifact@v4
         with:
           name: NahwuQuest-release
